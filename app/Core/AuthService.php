@@ -31,7 +31,18 @@ class AuthService
     }
 
 
+    public function logout(): void
+    {
+        Session::start();
+        Session::destroy();
+    }
 
+ 
+    public function check(): bool
+    {
+        Session::start();
+        return Session::has('user_id');
+    }
 }
 
 ?>
