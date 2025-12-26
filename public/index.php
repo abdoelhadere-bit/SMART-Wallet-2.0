@@ -12,18 +12,19 @@ $config = require __DIR__ . '/../config/config.php';
 $db = new Database($config['db']);
 $pdo = $db->getConnection();
 
-$userModel = new User($pdo);
-$auth = new AuthService($userModel);
-
 $error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    // $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $password = $_POST['password'];
+    $user = new User($pdo, "", $email, $password, "");
+    $ok = $user->login();
 
 
-    $ok = $auth->login($email, $password);
-    // var_dump($ok);
+
+
+    var_dump($ok);
 
     if ($ok) {
 
@@ -78,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
               <p class="mt-3 text-center text-gray-600 dark:text-gray-400">
                   Don't have an account ? 
-                  <a href="auth/register.php" class="text-blue-500 hover:text-blue-700 font-semibold hover:underline">
+                  <a href="./register.php" class="text-blue-500 hover:text-blue-700 font-semibold hover:underline">
                       Sign Up Now
                   </a>
               </p>
