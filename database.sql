@@ -22,17 +22,6 @@ CREATE TABLE IF NOT EXISTS categories (
 );
 
 -- Table cards
-CREATE TABLE IF NOT EXISTS cards (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    card_name VARCHAR(100) NOT NULL,
-    initial_balance DECIMAL(10,2) DEFAULT 0,
-    current_balance DECIMAL(10,2) DEFAULT 0,
-    is_primary BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
 
 -- Table incomes
 CREATE TABLE IF NOT EXISTS incomes (
@@ -66,17 +55,14 @@ CREATE TABLE IF NOT EXISTS expenses (
     FOREIGN KEY (card_id) REFERENCES cards(id)
 );
 
-INSERT INTO users (name, email, password)
-VALUES ('User','test@example.com','$2y$10$yH0nK7y0FJYq8zVxJH1x1u0uFJQ8m2oQZ3G6cZKzqZ2k5zvZ9Qz7K');
 
-INSERT INTO users (name, email, password)
-VALUES ('User','test1@example.com','1234');
 
   show tables
 
   show databases;
   
 
-  select * from users
+  select * from expenses
 
-  SELECT * FROM users WHERE email = 'test@example.com';
+
+
