@@ -10,53 +10,55 @@ require __DIR__ . '/../app/Core/AuthService.php';
 
 $config = require __DIR__ . '/../config/config.php';
 
-$db = new Database($config['db']);
+
+
+
+$db  = new Database($config['db']);
 $pdo = $db->getConnection();
 
-$userModel = new User($pdo);
-$auth = new AuthService($userModel);
+$user = new User($pdo, "", "", "", "");
 
-if (!$auth->check()) {
-    header('Location: index.php');
-    exit;
+if(!$user->check()){
+    header('Location: ./index.php');  
+    exit;  
 }
+$userId = (int) Session::get('userId');
 
-$user_id = $auth->userId();
+$userRow = $user->getById((int)$userId);
+$user_name = $userRow['name'];
 
-$userRow = $userModel->getById($user_id);
-$user_name = $userRow['name'] ?? 'User';
 
 
 // Calcul du total des revenus
 $totalIncomes = $pdo->prepare("SELECT SUM(montant) as total FROM incomes WHERE user_id = ?");
-$totalIncomes->execute([$user_id]);
+$totalIncomes->execute([$userId]);
 $totalIncomes = $totalIncomes->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
 // Calcul du total des dépenses
 $totalExpenses = $pdo->prepare("SELECT SUM(montant) as total FROM expenses WHERE user_id = ?");
-$totalExpenses->execute([$user_id]);
+$totalExpenses->execute([$userId]);
 $totalExpenses = $totalExpenses->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
 // Calcul du solde
 $balance = $totalIncomes - $totalExpenses;
 
 // Revenus du mois en cours
-$currentMonthIncomes = $pdo->prepare("SELECT SUM(montant) as total FROM incomes WHERE MONTH(dates) = MONTH(CURRENT_DATE()) AND YEAR(dates) = YEAR(CURRENT_DATE()) AND user_id = ?");
-$currentMonthIncomes->execute([$user_id]);
+$currentMonthIncomes = $pdo->prepare("SELECT SUM(montant) as total FROM incomes WHERE MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE()) AND user_id = ?");
+$currentMonthIncomes->execute([$userId]);
 $currentMonthIncomes = $currentMonthIncomes->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
 // Dépenses du mois en cours
-$currentMonthExpenses = $pdo->prepare("SELECT SUM(montant) as total FROM expenses WHERE MONTH(dates) = MONTH(CURRENT_DATE()) AND YEAR(dates) = YEAR(CURRENT_DATE()) AND user_id = ?");
-$currentMonthExpenses->execute([$user_id]);
+$currentMonthExpenses = $pdo->prepare("SELECT SUM(montant) as total FROM expenses WHERE MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE()) AND user_id = ?");
+$currentMonthExpenses->execute([$userId]);
 $currentMonthExpenses = $currentMonthExpenses->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
 // Données pour le graphique mensuel
-$monthlyIncomes = $pdo->prepare("SELECT DATE_FORMAT(dates, '%Y-%m') as month, SUM(montant) as total FROM incomes WHERE user_id = ? GROUP BY DATE_FORMAT(dates, '%Y-%m') ORDER BY month DESC LIMIT 6");
-$monthlyIncomes->execute([$user_id]);
+$monthlyIncomes = $pdo->prepare("SELECT DATE_FORMAT(date, '%Y-%m') as month, SUM(montant) as total FROM incomes WHERE user_id = ? GROUP BY DATE_FORMAT(date, '%Y-%m') ORDER BY month DESC LIMIT 6");
+$monthlyIncomes->execute([$userId]);
 $monthlyIncomes = $monthlyIncomes->fetchAll(PDO::FETCH_ASSOC);
 
-$monthlyExpenses = $pdo->prepare("SELECT DATE_FORMAT(dates, '%Y-%m') as month, SUM(montant) as total FROM expenses WHERE user_id = ? GROUP BY DATE_FORMAT(dates, '%Y-%m') ORDER BY month DESC LIMIT 6");
-$monthlyExpenses->execute([$user_id]);
+$monthlyExpenses = $pdo->prepare("SELECT DATE_FORMAT(date, '%Y-%m') as month, SUM(montant) as total FROM expenses WHERE user_id = ? GROUP BY DATE_FORMAT(date, '%Y-%m') ORDER BY month DESC LIMIT 6");
+$monthlyExpenses->execute([$userId]);
 $monthlyExpenses = $monthlyExpenses->fetchAll(PDO::FETCH_ASSOC);
 
 $monthlyIncomes = array_reverse($monthlyIncomes);
@@ -223,7 +225,7 @@ $monthlyExpenses = array_reverse($monthlyExpenses);
         <!-- Navigation -->
         <nav class="py-4">
             <!-- Dashboard -->
-            <a href="dark_dashboard.php" class="sidebar-item active">
+            <a href="#" class="sidebar-item active">
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
@@ -231,7 +233,7 @@ $monthlyExpenses = array_reverse($monthlyExpenses);
             </a>
 
             <!-- Revenus -->
-            <a href="incomes.php" class="sidebar-item">
+            <a href="./incomes.php" class="sidebar-item">
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -239,46 +241,20 @@ $monthlyExpenses = array_reverse($monthlyExpenses);
             </a>
 
             <!-- Dépenses -->
-            <a href="expenses.php" class="sidebar-item">
+            <a href="./expenses.php" class="sidebar-item">
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 Dépenses
             </a>
 
-            <!-- Mes Cartes -->
-            <a href="cards.php" class="sidebar-item">
+             <a href="./categories.php" class="sidebar-item">
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6h6v6H4V6zm10 0h6v6h-6V6zM4 14h6v6H4v-6zm10 4a2 2 0 100-4 2 2 0 000 4z" />
                 </svg>
-                Mes Cartes
+                Categorie
             </a>
-
-            <!-- Limites Budgétaires -->
-            <a href="budget_limits.php" class="sidebar-item">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                Limites
-            </a>
-
-            <!-- Transactions Récurrentes -->
-            <a href="recurring_transactions.php" class="sidebar-item">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Récurrentes
-            </a>
-
-            <!-- Transferts -->
-            <a href="transfers.php" class="sidebar-item">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-                Transferts
-                <!-- <span class="badge">NEW</span> -->
-            </a>
-        </nav>
 
         <!-- Logout -->
         <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700/50">
